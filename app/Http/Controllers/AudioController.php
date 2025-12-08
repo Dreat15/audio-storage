@@ -11,11 +11,6 @@ use Illuminate\Support\Facades\Storage;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 use FFMpeg\Filters\Audio;
 
-//use FFMpeg\FFMpeg;
-//use FFMpeg\Format\Audio\Wav;
-
-//require 'vendor/autoload.php';
-
 class AudioController extends Controller
 {
     public function index()
@@ -30,20 +25,11 @@ class AudioController extends Controller
         'description' => 'required|string|max:500'
         ]);
 
-        //$file = $request->file('audio');
         $filename = Str::random(16) . '.mp3';
 
         $targetName = pathinfo($filename, PATHINFO_FILENAME) . '.wav';
         $targetPath = 'public/storage/audio' . $targetName;
 
-        //$file->storeAs('audio', $filename, 'public');
-
-       /* $f = FFMpeg::fromDisk('public')
-            ->open('audio/' . $filename)
-            ->export()
-            ->toDisk('public')
-            ->inFormat((new \FFMpeg\Format\Audio\Wav))
-            ->save($targetPath);*/
         FFMpeg::fromDisk('public')
             //->open('audio/' . $filename)
             ->open($request->file('audio'))
@@ -57,20 +43,6 @@ class AudioController extends Controller
         '-map_metadata', '-1'
     ])
             ->save('audio/' . $targetName);
- 
-
-            /*
-        $disk = Storage::disk('public');
-        $ffmpeg = FFMpeg::create();
-        $audio = $ffmpeg->open($disk->path('audio/' . $filename));
-
-        $format = new Wav();
-        $format->setAudioChannels(2)
-                ->setAudioKiloBitrate(1411);
-
-        $audio->save($format, $disk->path('audio/' . $filename));*/
-
-        // Datei speichern
         
 
         // DB speichern
@@ -80,14 +52,8 @@ class AudioController extends Controller
         ]);
 
         $ip = $_SERVER['APP_URL'];
-
         $link = $ip . route('audio.play', $audio->id, false);
-
-        $qr = base64_encode(QrCode::format('png')->size(300)->generate($link));
-
-
-        //$link = route('audio.play', $audio->id);
-        //$qr = base64_encode(QrCode::format('png')->size(300)->generate($link));
+        $qr = base64_encode(QrCode::format('png')->size(300)->style('round')->eye('circle')->generate($link));
 
         return view('result', compact('audio', 'qr', 'link'));
     }
@@ -96,7 +62,6 @@ class AudioController extends Controller
 public function play($id)
 {
     $audio = Audios::findOrFail($id);
-
     $path = asset('storage/audio/' . $audio->filename);
 
     return view('play', compact('audio', 'path'));
@@ -104,10 +69,28 @@ public function play($id)
 
 public function list()
 {
-    $audios = Audios::latest()->get();
+    $audios = Audios::latest()->paginate(10);
 
     return view('list', compact('audios'));
 }
 
+    public function destroy($id)
+    {
+        $audio = Audios::findOrFail($id);
 
+        // Remove file from the public disk if it exists
+        if ($audio->filename && Storage::disk('public')->exists('audio/' . $audio->filename)) {
+            Storage::disk('public')->delete('audio/' . $audio->filename);
+        }
+
+        // Delete database record
+        $audio->delete();
+
+        // Return JSON for AJAX requests, otherwise redirect back to list
+        if (request()->wantsJson()) {
+            return response()->json(['message' => 'Audio deleted'], 200);
+        }
+
+        return redirect()->route('audio.list')->with('success', 'Audio deleted');
+    }
 }
