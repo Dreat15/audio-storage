@@ -31,10 +31,10 @@
            class="text-blue-600 underline block text-center no-print">
             Abspielen
         </a>
-        <form action="{{ route('audio.destroy', $audio->id) }}" method="POST" onsubmit="return confirm('Delete this audio?')" class="absolute right-2 top-2" style="position: absolute; right: 0.05rem; top: 0.05rem;">
+        <form action="{{ route('audio.destroy', $audio->id) }}" method="POST" onsubmit="return confirm('Delete this audio?')" class="absolute right-2 top-2" style="position: absolute; right: 1rem; top: 1rem;">
             @csrf
             @method('DELETE')
-            <button type="submit" aria-label="Delete audio" class="flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600" style="width:80px; height:80px; font-size:40px; line-height:1; z-index:50;">&times;</button>
+            <button type="submit" aria-label="Delete audio" class="flex items-center justify-center rounded-full" style="width:10px; height:10px; font-size:40px; line-height:1; z-index:50;">&times;</button>
         </form>
     </div>
 @endforeach
